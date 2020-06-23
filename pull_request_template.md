@@ -3,6 +3,9 @@ Provide a general summary of your changes in the Title above.
 ## Description
 Describe your changes in detail
 
+## Caveats
+Are there any known issues or limitations that someone might stumble upon, but will not be addressed by this PR?
+
 ## Related PRs
 Any other code to consider?
 
