@@ -23,3 +23,4 @@ Go over all the following points, and put an `x` in all the boxes that apply. No
 - [ ] Addressed any security concerns with this PR.
 - [ ] Linked to JIRA story in the title, example: `[TD-###] PR Title`
 - [ ] My change does not affect native builds, or a relevant native change has also been created
+- [ ] Checked for package.lock changes
