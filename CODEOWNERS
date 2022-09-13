@@ -1,1 +1,6 @@
+# We can get very specific with this later if we want to, here are some examples:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
+# This should make the whole Dev team code owners of the entire repo and trigger an auto assignment from the team settings.
+# We could also specify folders or file types.
+@TiledCo/Dev
