@@ -22,5 +22,5 @@ Go over all the following points, and put an `x` in all the boxes that apply. No
 - [ ] I have added tests to cover my changes.
 - [ ] All new and existing tests passed.
 - [ ] Addressed any security concerns with this PR.
-- [ ] My change does not affect native builds, or a relevant native change has also been created
+- [ ] My change does not affect native builds, or a relevant native change has also been created. If you are making db schema changes, this may be the case.
 - [ ] Checked for package.lock changes
