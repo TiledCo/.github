@@ -1,6 +1,6 @@
 # Tiled Platform
 
-Multi-project platform for creating and sharing interactive content. Each sub-project is an independent repo with its own toolchain — there is no root-level package.json or shared build system.
+Multi-project platform for creating and sharing microapps. Each sub-project is an independent repo with its own toolchain — there is no root-level package.json or shared build system.
 
 ## Project Map
 
@@ -28,7 +28,6 @@ Multi-project platform for creating and sharing interactive content. Each sub-pr
 ### Package Management
 - **npm** exclusively (no yarn/pnpm). Use `npm ci` for reproducible installs.
   - **Exception:** `xd-plugin` uses `yarn` internally in its build scripts — global yarn installation required.
-- `patch-package` is used in hub, electron-client, and native-clients — run `npm run postinstall` after patching.
 
 ### Node Versions
 - Most projects: **Node 22.16.0** (use nvm — `.nvmrc` files are present)
