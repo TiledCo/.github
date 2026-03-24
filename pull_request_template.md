@@ -1,9 +1,6 @@
 ## Description
 Provide context for the code changes. Why are these changes being made?
 
-## Caveats
-Are there any known issues or limitations that someone might stumble upon, but will not be addressed by this PR?
-
 ## Related PRs
 Any other code to consider?
 
