@@ -74,6 +74,8 @@ import { Box, Flex } from 'tiled-ui';
 
 ## Sub-Project Notes
 
+> `api/`, `hub/`, `admin/`, and `electron-hub/` have dedicated `.github/copilot-instructions.md` files with detailed architecture, code patterns, and linting gotchas. These are loaded automatically by Copilot when working in those directories.
+
 ### api/
 - CommonJS throughout. Express + Mongoose.
 - Multi-environment: dev, test, hotfix, pp, prod, env01–env20 (K8S staging)
