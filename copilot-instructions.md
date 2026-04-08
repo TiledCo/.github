@@ -8,6 +8,7 @@ Multi-project platform for creating and sharing microapps. Each sub-project is a
 |-----------|-------------|-------|
 | `api/` | REST API backend | Express, Mongoose, Mocha, Node 22 |
 | `hub/` | Web builder + viewer | React 18, Express, Webpack 5, Jest, Node 22 |
+| `electron-hub/` | Electron desktop app (offline viewer) | Electron 35, TypeScript, React 18, better-sqlite3, Node 22 |
 | `mosaic/` | Shared JS SDK (enums, API client, permissions) | Babel, Node 22 |
 | `tiled-ui/` | Shared React component library | TypeScript, Rollup, Storybook |
 | `admin/` | Internal admin dashboard | React 18, CRA, MUI |
@@ -63,6 +64,7 @@ import { Box, Flex } from 'tiled-ui';
 |---------|-----------|---------|
 | api | Mocha + Chai | `npm test` |
 | hub | Jest (UI + server) | `npm test` |
+| electron-hub | Jest + ts-jest | `npm test` (rebuilds better-sqlite3 for system Node via `pretest`) |
 | tiled-ui | Jest + Testing Library | `npm test` |
 | native-clients | Jest | `npm test` |
 | xd-plugin | Jest + Testing Library | `npm test` |
@@ -129,3 +131,14 @@ import { Box, Flex } from 'tiled-ui';
 - Deploy: AWS CodeDeploy (`appspec.yml` + `ci-cd/` scripts), runs behind nginx + Gunicorn
 - Install: `pip install -r requirements.txt`
 - Endpoint: `POST /extract` with body `{"output_folder": "<account>/<app>", "key": "<s3-key>"}`
+
+### electron-hub/
+- Electron 35 desktop app — offline microapp viewer with background sync
+- **Native modules:** `better-sqlite3` must be rebuilt for the correct runtime. Run `npm run prestart` (uses `electron-rebuild`) before launching with Electron, and `pretest` (uses `npm rebuild`) before running Jest. Both run automatically via npm lifecycle hooks.
+- **Two webpack bundles:** `webpack.main.config.js` (main + preload) and `webpack.renderer.config.js` (library UI React app)
+- **Custom protocol:** `tiled://` registered via `registerSchemesAsPrivileged`. Routes: `tiled://library/` → renderer bundle, `tiled://viewer/page/{id}` → in-memory HTML store, `tiled://viewer/assets/*` → hub-dist/, `tiled://viewer/cached/*` → userData/assets/
+- **Hub bundles:** Run `npm run sync-hub-build` to copy viewer + components JS from `hub/dist/` into `hub-dist/` and write `hub-dist/manifest.json` (version, filenames). Must be re-run after hub builds.
+- **Packaging:** `npm run package:mac` / `npm run package:win`. electron-builder **must run from inside `electron-hub/`** — it fails from the workspace root. Full pipeline: `bash scripts/build-release.sh [mac|win|all]`
+- **IPC:** All channels defined in `src/shared/types.ts` `IPC` const. Never hardcode channel strings. Preload exposes full typed `ElectronAPI` via `contextBridge`.
+- **SQLite schema:** 7 tables — `libraries`, `microapps`, `published_documents`, `assets`, `analytics_queue`, `sync_state`, `migrations`. Schema in `src/main/db.ts`.
+- **Analytics:** Events queued locally in `analytics_queue` when offline, flushed to API on reconnect (30s periodic flush). `hub/src/viewer.js` passes `window.__tiledElectronAnalytics` as `trackOrEnqueue` to mosaic `actionsConfig`.
