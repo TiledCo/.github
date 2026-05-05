@@ -27,7 +27,7 @@ Multi-project platform for creating and sharing microapps. Each sub-project is a
 - **Indentation**: 2 spaces, LF line endings, UTF-8, trim trailing whitespace
 
 ### Security
-- **Run a targeted security scan on all new code** before committing or merging — check for OWASP Top 10 issues, injection risks, auth flaws, and insecure dependencies.
+- **Run `/security-review` on all new code** before committing or merging — this scans pending changes for OWASP Top 10 issues, injection risks, auth flaws, and insecure dependencies.
 - Pay special attention to: user input handling, auth/token logic, SQL/NoSQL queries, file uploads, and any new API endpoints.
 - For Node.js projects: `npm audit` must pass (no high/critical vulnerabilities) before merging.
 
@@ -81,50 +81,48 @@ import { Box, Flex } from 'tiled-ui';
 
 ## Sub-Project Notes
 
-> `api/`, `hub/`, `admin/`, and `electron-hub/` have dedicated `.github/copilot-instructions.md` files with detailed architecture, code patterns, and linting gotchas. These are loaded automatically by Copilot when working in those directories.
+> `api/`, `hub/`, `admin/`, and `electron-hub/` have dedicated `.github/copilot-instructions.md` files with detailed architecture, code patterns, and linting gotchas.
 
 ### api/
 - CommonJS throughout. Express + Mongoose.
 - Multi-environment: dev, test, hotfix, pp, prod, env01–env20 (K8S staging)
 - **Dual server processes:** `index.js` runs the private API on port 3002 (`npm run dev`); `index-public.js` runs a separate public API on port 3003 (`npm run dev:public`)
 - **Dual database:** MongoDB/Mongoose for app data (`DB_MONGO_URL`), PostgreSQL/Sequelize for analytics (`tiled_analytics`, `tiled_arbiter`). Separate migration commands for each.
-- **Queue system:** Bull (Redis-backed) for async jobs — PDF conversion, microapp import/export, analytics export, HubSpot sync, user anonymization, trial bootstrap/downgrade. Redis is optional (`REDIS_DISABLED` env var skips queue creation). Config: `REDIS_HOST`, `REDIS_PORT`, `REDIS_AUTH_PASS`, `REDIS_TLS`
-- **Feature flags:** Unleash (`unleash-client`) with custom activation strategies: `InternalUseOnly`, `DesignerAccountsOnly`, `CreativeAccountsOnly` (defined in `api/strategies/`). Config: `UNLEASH_KEY`
-- **Auth/security:** Cookie-based JWTs (`JWT_SECRET`, `access_token`/`refresh_token` cookies), `express-rate-limit`, `helmet`, `cors`, `bcrypt`, `sanitize-html`. OAuth providers: Google. SAML SSO (`saml2-js`). SCIM provisioning (`/scim` directory).
+- **Queue system:** Bull (Redis-backed) for async jobs — PDF conversion, microapp import/export, analytics export, HubSpot sync, user anonymization, trial bootstrap/downgrade. Redis is optional (`REDIS_DISABLED` env var skips queue creation).
+- **Feature flags:** Unleash (`unleash-client`) with custom activation strategies: `InternalUseOnly`, `DesignerAccountsOnly`, `CreativeAccountsOnly` (defined in `api/strategies/`).
+- **Auth/security:** Cookie-based JWTs (`JWT_SECRET`, `access_token`/`refresh_token` cookies), `express-rate-limit`, `helmet`, `cors`, `bcrypt`, `sanitize-html`. OAuth: Google. SAML SSO (`saml2-js`). SCIM provisioning (`/scim` directory).
 - **Storage backends:** S3 (default), Azure Blob Storage, CloudFront (signed URLs). `STORAGE_SERVICE` env var selects S3 vs Azure.
 - **On-prem mode:** `DEPLOY_TYPE=on-prem` changes auth flows, cookie names (`tiled_` prefix), storage config, and required env vars.
-- **Observability:** Sentry (`SENTRY_DSN_API` / `SENTRY_DSN_PUBLIC`), New Relic (on-prem only), Winston logger + LogEntries
+- **Observability:** Sentry, New Relic (on-prem only), Winston logger + LogEntries
 - **v2 routes:** All REST routes under `/v2`. Key domains: accounts, analytics, assets, auth, config-sets, custom-tiles, dashboard, document-sets, documents, feature-flags, fonts, groups, instances, libraries, microapp, roles, rooms, saml-providers, scim-config, sheets, tags, tds, tenants, users, short-urls
-- **API docs:** JSDoc-generated (`npm run build:docs`) + OpenAPI/Redoc (`npm run build:redoc` from `public/docs/openapi.yaml`)
+- **API docs:** JSDoc-generated (`npm run build:docs`) + OpenAPI/Redoc (`npm run build:redoc`)
 - `pre-commit` hook runs lintcheck + build:docs
-- `express-http-context` for request-scoped context threading through middleware
 
 ### admin/
 - Create React App with MUI. Internal tool.
 - Consumes `mosaic` and `tiled-ui`
 
 ### hub/
-- Express server (port 3001) serves templates that bootstrap React apps; the server serves interpolated HTML shells, not server-rendered React.
+- Express server (port 3001) serves interpolated HTML shells that bootstrap React apps (not server-rendered React).
 - **Four webpack app bundles:** `hub`, `viewer`, `analytics`, `join` — each a separate React entry point, plus a shared `components` bundle all apps `dependOn`.
-- **Webpack import aliases** (for `import` statements): `api`, `actions`, `components`, `component-library`, `asset-library`, `common`, `colorpicker`, `hooks`, `styles`, `utl` (NOT `util`), `util-ts`, `images`, `audio`, `clientConfig`, `reducers`
-- **Jest three separate projects:** `server` (Node env, matches `server/test/**/*-test.js`), `ui` (jsdom env, matches `src/**`), `eslint` (linting as a Jest project). Run server tests alone: `npm run test:server`
-- **Dev server uses pm2** + `webpack-hot-middleware` (not a standalone webpack-dev-server). Hot reload injected as an entry point prefix.
+- **Webpack import aliases:** `api`, `actions`, `components`, `component-library`, `asset-library`, `common`, `colorpicker`, `hooks`, `styles`, `utl` (NOT `util`), `util-ts`, `images`, `audio`, `clientConfig`, `reducers`
+- **Jest three separate projects:** `server` (Node env), `ui` (jsdom env), `eslint` (linting as Jest project). Run server tests alone: `npm run test:server`
+- **Dev server uses pm2** + `webpack-hot-middleware` (not standalone webpack-dev-server).
 
 ### figma-plugin/
-- Figma plugin - syncs screens, hotspots, and prototypes from XD into Tiled microapps
+- Figma plugin — syncs screens, hotspots, and prototypes from XD into Tiled microapps
 - webpack build, Figma API types in `figma.d.ts`
 - Consumes `mosaic` and `tiled-ui`
 
 ### xd-plugin/
-- Adobe XD plugin — syncs screens, hotspots, and prototypes from XD into Tiled microapps
-- React 16 + Webpack 4, outputs a `.xdx` archive (main.js + manifest.json + images)
+- Adobe XD plugin — React 16 + Webpack 4, outputs a `.xdx` archive (main.js + manifest.json + images)
 - Uses `yarn` in build scripts (exception to the npm-only rule)
 - Environment-specific builds: `npm run build:dev`, `build:test`, `build:pp`, `build:prod`
 - `mosaic` version is v1.x (much older than other projects) — be aware of enum/API differences
 
 ### native-clients/
 - React Native 0.74 + Expo 51 mobile app for iOS and Android
-- Node 18.19.0 locked — do not upgrade
+- **Node 18.19.0 locked — do not upgrade**
 - State: Redux 5 + redux-thunk. Offline data: Realm 12
 - Navigation: `@react-navigation` (native-stack, drawer, bottom-tabs)
 - CI/CD: Azure Pipelines, builds via EAS (Expo Application Services)
@@ -133,17 +131,17 @@ import { Box, Flex } from 'tiled-ui';
 ### pdf-extractor/
 - Python Flask microservice — no Node.js, no package.json
 - Receives PDF via HTTP POST, extracts slides/media/layout using PyMuPDF, uploads results to S3
-- Deploy: AWS CodeDeploy (`appspec.yml` + `ci-cd/` scripts), runs behind nginx + Gunicorn
+- Deploy: AWS CodeDeploy, runs behind nginx + Gunicorn
 - Install: `pip install -r requirements.txt`
 - Endpoint: `POST /extract` with body `{"output_folder": "<account>/<app>", "key": "<s3-key>"}`
 
 ### electron-hub/
 - Electron 35 desktop app — offline microapp viewer with background sync
-- **Native modules:** `better-sqlite3` must be rebuilt for the correct runtime. Run `npm run prestart` (uses `electron-rebuild`) before launching with Electron, and `pretest` (uses `npm rebuild`) before running Jest. Both run automatically via npm lifecycle hooks.
-- **Two webpack bundles:** `webpack.main.config.js` (main + preload) and `webpack.renderer.config.js` (library UI React app)
-- **Custom protocol:** `tiled://` registered via `registerSchemesAsPrivileged`. Routes: `tiled://library/` → renderer bundle, `tiled://viewer/page/{id}` → in-memory HTML store, `tiled://viewer/assets/*` → hub-dist/, `tiled://viewer/cached/*` → userData/assets/
-- **Hub bundles:** Run `npm run sync-hub-build` to copy viewer + components JS from `hub/dist/` into `hub-dist/` and write `hub-dist/manifest.json` (version, filenames). Must be re-run after hub builds.
-- **Packaging:** `npm run package:mac` / `npm run package:win`. electron-builder **must run from inside `electron-hub/`** — it fails from the workspace root. Full pipeline: `bash scripts/build-release.sh [mac|win|all]`
-- **IPC:** All channels defined in `src/shared/types.ts` `IPC` const. Never hardcode channel strings. Preload exposes full typed `ElectronAPI` via `contextBridge`.
+- **Native modules:** `better-sqlite3` must be rebuilt before launch (`npm run prestart`) and before tests (`pretest`). Both run automatically via npm lifecycle hooks.
+- **Two webpack bundles:** `webpack.main.config.js` (main + preload) and `webpack.renderer.config.js` (renderer React app)
+- **Custom protocol:** `tiled://` registered via `registerSchemesAsPrivileged`
+- **Hub bundles:** Run `npm run sync-hub-build` to copy viewer + components JS from `hub/dist/` into `hub-dist/`. Must be re-run after hub builds.
+- **Packaging:** `npm run package:mac` / `npm run package:win`. electron-builder **must run from inside `electron-hub/`**. Full pipeline: `bash scripts/build-release.sh [mac|win|all]`
+- **IPC:** All channels defined in `src/shared/types.ts` `IPC` const. Never hardcode channel strings.
 - **SQLite schema:** 7 tables — `libraries`, `microapps`, `published_documents`, `assets`, `analytics_queue`, `sync_state`, `migrations`. Schema in `src/main/db.ts`.
-- **Analytics:** Events queued locally in `analytics_queue` when offline, flushed to API on reconnect (30s periodic flush). `hub/src/viewer.js` passes `window.__tiledElectronAnalytics` as `trackOrEnqueue` to mosaic `actionsConfig`.
+- **Analytics:** Events queued locally in `analytics_queue` when offline, flushed to API on reconnect (30s periodic flush).
