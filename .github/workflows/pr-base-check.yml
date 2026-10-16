@@ -1,0 +1,42 @@
+# Reusable workflow: fail PRs whose base branch is a dead end (already merged to dev, or has no route to it).
+# Callers (api, tiled-mono, tiled-mcp, ...) add a small workflow that `uses:` this file. To make it block merges,
+# mark the "PR base check / base-check" status as required in the branch protection / ruleset for dev.
+name: PR base check
+
+on:
+  workflow_call:
+    inputs:
+      allowed-bases:
+        description: Regex of base branches that are always fine.
+        type: string
+        default: '^(dev|master|main|pre-production|release/.+|hotfix/.+|env[0-9]+)$'
+      override-label:
+        description: Label that skips the check for a deliberate stacked PR.
+        type: string
+        default: stacked-pr
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  base-check:
+    name: base-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch the check script
+        uses: actions/checkout@v4
+        with:
+          repository: TiledCo/.github
+          ref: master
+          path: .org-github
+          sparse-checkout: scripts
+      - name: Check the PR base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          ALLOWED_BASES: ${{ inputs.allowed-bases }}
+          OVERRIDE_LABEL: ${{ inputs.override-label }}
+        run: .org-github/scripts/pr-base-check.sh
